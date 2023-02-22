@@ -420,6 +420,9 @@ impl RawHardwareAddress {
             }
             #[cfg(feature = "medium-ip")]
             Medium::Ip => unreachable!(),
+
+            #[cfg(feature = "medium-lorawan")]
+            Medium::Lorawan => unreachable!(), // not sure if HardwareAdress of any use for Lorawan, not sure it is unreachable
         }
     }
 }

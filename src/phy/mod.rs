@@ -109,6 +109,8 @@ mod tracer;
     any(target_os = "linux", target_os = "android")
 ))]
 mod tuntap_interface;
+#[cfg(feature = "phy-lorawan_interface")]
+mod lorawan_interface;
 
 #[cfg(all(
     any(feature = "phy-raw_socket", feature = "phy-tuntap_interface"),
@@ -129,6 +131,8 @@ pub use self::tracer::Tracer;
     any(target_os = "linux", target_os = "android")
 ))]
 pub use self::tuntap_interface::TunTapInterface;
+#[cfg(feature="phy-lorawan_interface")]
+pub use self::lorawan_interface::LorawanInterface;
 
 /// A description of checksum behavior for a particular protocol.
 #[derive(Debug, Clone, Copy, Default)]
@@ -247,9 +251,12 @@ impl DeviceCapabilities {
             }
             #[cfg(feature = "medium-ip")]
             Medium::Ip => self.max_transmission_unit,
+
             #[cfg(feature = "medium-ieee802154")]
             Medium::Ieee802154 => self.max_transmission_unit, // TODO(thvdveld): what is the MTU for Medium::IEEE802
-        }
+            #[cfg(feature = "medium-lorawan")]
+            Medium::Lorawan => self.max_transmission_unit, // 
+                }
     }
 }
 
@@ -273,6 +280,9 @@ pub enum Medium {
 
     #[cfg(feature = "medium-ieee802154")]
     Ieee802154,
+
+    #[cfg(feature = "medium-lorawan")]
+    Lorawan,
 }
 
 impl Default for Medium {
@@ -288,9 +298,17 @@ impl Default for Medium {
         ))]
         return Medium::Ieee802154;
         #[cfg(all(
+            feature = "medium-lorawan",
             not(feature = "medium-ip"),
             not(feature = "medium-ethernet"),
             not(feature = "medium-ieee802154")
+        ))]
+        return Medium::Lorawan;
+        #[cfg(all(
+            not(feature = "medium-ip"),
+            not(feature = "medium-ethernet"),
+            not(feature = "medium-ieee802154"),
+            not(feature = "medium-lorawan")
         ))]
         return panic!("No medium enabled");
     }

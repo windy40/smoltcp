@@ -9,6 +9,8 @@ mod tests;
 mod ethernet;
 #[cfg(feature = "proto-sixlowpan")]
 mod sixlowpan;
+#[cfg(feature = "medium-lorawan")]
+mod schc;
 
 #[cfg(feature = "proto-ipv4")]
 mod ipv4;
@@ -34,6 +36,7 @@ use crate::config::{
     FRAGMENTATION_BUFFER_SIZE, IFACE_MAX_ADDR_COUNT, IFACE_MAX_MULTICAST_GROUP_COUNT,
     IFACE_MAX_SIXLOWPAN_ADDRESS_CONTEXT_COUNT,
 };
+//#[cfg(any(feature = "medium-ethernet",feature = "medium-ip", feature = "medium-ieee802154"))]
 use crate::iface::Routes;
 use crate::phy::{ChecksumCapabilities, Device, DeviceCapabilities, Medium, RxToken, TxToken};
 use crate::rand::Rand;
@@ -496,6 +499,14 @@ impl Interface {
                     .hardware_addr
                     .expect("hardware_addr required option was not set"),
             ),
+            #[cfg(feature = "medium-lorawan")]
+            Medium::Lorawan => {
+                assert!(
+                    config.hardware_addr.is_none(),
+                    "hardware_addr is set, but device medium is Lorawan"
+                );
+                None
+            }
         };
 
         let mut rand = Rand::new(config.random_seed);
@@ -747,6 +758,14 @@ impl Interface {
                     return true;
                 }
             }
+            #[cfg(feature = "medium-lorawan")]
+            Medium::Lorawan =>
+            {
+                #[cfg(feature = "proto-schc-fragmentation")]
+                if self.schc_egress(device) {
+                    return true;
+                }
+            }
             #[cfg(any(feature = "medium-ethernet", feature = "medium-ip"))]
             _ =>
             {
@@ -869,6 +888,20 @@ impl Interface {
                         if let Some(packet) =
                             self.inner
                                 .process_ieee802154(sockets, &frame, &mut self.fragments)
+                        {
+                            if let Err(err) =
+                                self.inner
+                                    .dispatch_ip(tx_token, packet, &mut self.fragmenter)
+                            {
+                                net_debug!("Failed to send response: {:?}", err);
+                            }
+                        }
+                    }
+                    #[cfg(feature = "medium-lorawan")]
+                    Medium::Lorawan => {
+                        if let Some(packet) =
+                            self.inner
+                                .process_lorawan(sockets, &frame, &mut self.fragments)
                         {
                             if let Err(err) =
                                 self.inner
@@ -1119,6 +1152,8 @@ impl InterfaceInner {
                 medium: crate::phy::Medium::Ip,
                 #[cfg(all(not(feature = "medium-ethernet"), feature = "medium-ieee802154"))]
                 medium: crate::phy::Medium::Ieee802154,
+                #[cfg(all(not(feature = "medium-ethernet"), feature = "medium-lorawan"))]
+                medium: crate::phy::Medium::Lorawan,
 
                 checksum: crate::phy::ChecksumCapabilities {
                     #[cfg(feature = "proto-ipv4")]
@@ -1516,6 +1551,8 @@ impl InterfaceInner {
                     .found(),
                 #[cfg(feature = "medium-ip")]
                 Medium::Ip => true,
+                #[cfg(feature = "medium-lorawan")]
+                Medium::Lorawan => false,
             },
             None => false,
         }
@@ -1540,6 +1577,8 @@ impl InterfaceInner {
                 Medium::Ieee802154 => HardwareAddress::Ieee802154(Ieee802154Address::BROADCAST),
                 #[cfg(feature = "medium-ip")]
                 Medium::Ip => unreachable!(),
+                #[cfg(feature = "medium-lorawan")]
+                Medium::Lorawan => unreachable!(),
             };
 
             return Ok((hardware_addr, tx_token));
@@ -1572,6 +1611,8 @@ impl InterfaceInner {
                     }
                     #[cfg(feature = "medium-ip")]
                     Medium::Ip => unreachable!(),
+                    #[cfg(feature = "medium-lorawan")]
+                    Medium::Lorawan => unreachable!(),
                 },
             };
 
@@ -1690,6 +1731,15 @@ impl InterfaceInner {
             let addr = addr.ieee802154_or_panic();
 
             self.dispatch_ieee802154(addr, tx_token, packet, frag);
+            return Ok(());
+        }
+
+        // Dispatch Lorawan:
+
+        #[cfg(feature = "medium-lorawan")]
+        if matches!(self.caps.medium, Medium::Lorawan) {
+
+            self.dispatch_lorawan( tx_token, packet, frag);
             return Ok(());
         }
 

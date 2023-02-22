@@ -25,6 +25,8 @@ impl RawSocketDesc {
             Medium::Ip => imp::ETH_P_ALL,
             #[cfg(feature = "medium-ieee802154")]
             Medium::Ieee802154 => imp::ETH_P_IEEE802154,
+            #[cfg(feature = "medium-lorawan")]
+            Medium::Lorawan => unreachable!(),
         };
 
         let lower = unsafe {

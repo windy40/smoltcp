@@ -44,6 +44,8 @@ impl TunTapInterfaceDesc {
             Medium::Ethernet => imp::IFF_TAP,
             #[cfg(feature = "medium-ieee802154")]
             Medium::Ieee802154 => todo!(),
+            #[cfg(feature = "medium-lorawan")]
+            Medium::Lorawan => unreachable!(),
         };
         self.ifreq.ifr_data = mode | imp::IFF_NO_PI;
         ifreq_ioctl(self.lower, &mut self.ifreq, imp::TUNSETIFF).map(|_| ())
@@ -76,6 +78,8 @@ impl TunTapInterfaceDesc {
             Medium::Ethernet => ip_mtu + EthernetFrame::<&[u8]>::header_len(),
             #[cfg(feature = "medium-ieee802154")]
             Medium::Ieee802154 => todo!(),
+            #[cfg(feature = "medium-lorawan")]
+            Medium::Lorawan => unreachable!(),
         };
 
         Ok(mtu)

@@ -25,6 +25,8 @@ bitflags = { version = "1.0", default-features = false }
 defmt = { version = "0.3", optional = true }
 cfg-if = "1.0.0"
 heapless = "0.7.8"
+lwnsim-api-rs= {git="https://github.com/windy40/lwnsim-api-rs.git", optional = true}
+base64 = { version = "0.21", optional = true }
 
 [dev-dependencies]
 env_logger = "0.9"
@@ -40,9 +42,11 @@ defmt = [ "dep:defmt", "heapless/defmt", "heapless/defmt-impl" ]
 "medium-ethernet" = ["socket"]
 "medium-ip" = ["socket"]
 "medium-ieee802154" = ["socket", "proto-sixlowpan"]
+"medium-lorawan" =["socket", "base64"]
 
 "phy-raw_socket" = ["std", "libc"]
 "phy-tuntap_interface" = ["std", "libc", "medium-ethernet"]
+"phy-lorawan_interface" = ["std", "lwnsim-api-rs", "medium-lorawan"]
 
 "proto-ipv4" = []
 "proto-ipv4-fragmentation" = ["proto-ipv4", "_proto-fragmentation"]
@@ -52,6 +56,7 @@ defmt = [ "dep:defmt", "heapless/defmt", "heapless/defmt-impl" ]
 "proto-sixlowpan" = ["proto-ipv6"]
 "proto-sixlowpan-fragmentation" = ["proto-sixlowpan", "_proto-fragmentation"]
 "proto-dns" = []
+"proto-schc" = ["proto-ipv6"]
 
 "socket" = []
 "socket-raw" = ["socket"]
@@ -66,9 +71,10 @@ defmt = [ "dep:defmt", "heapless/defmt", "heapless/defmt-impl" ]
 
 default = [
   "std", "log", # needed for `cargo test --no-default-features --features default` :/
-  "medium-ethernet", "medium-ip", "medium-ieee802154",
-  "phy-raw_socket", "phy-tuntap_interface",
+  "medium-ethernet", "medium-ip", "medium-ieee802154","medium-lorawan",
+  "phy-raw_socket", "phy-tuntap_interface","phy-lorawan_interface",
   "proto-ipv4", "proto-igmp", "proto-dhcpv4", "proto-ipv6", "proto-dns",
+ # "proto-schc", "proto-schc-fragmentation",
   "proto-ipv4-fragmentation", "proto-sixlowpan-fragmentation",
   "socket-raw", "socket-icmp", "socket-udp", "socket-tcp", "socket-dhcpv4", "socket-dns", "socket-mdns",
   "async"
@@ -267,6 +273,10 @@ required-features = ["std", "medium-ieee802154", "phy-raw_socket", "proto-sixlow
 [[example]]
 name = "dns"
 required-features = ["std", "medium-ethernet", "medium-ip", "phy-tuntap_interface", "proto-ipv4", "socket-dns"]
+
+[[example]]
+name = "lorawan"
+required-features = ["std", "medium-lorawan", "phy-lorawan_interface","proto-ipv6", "socket-udp"]
 
 [profile.release]
 debug = 2

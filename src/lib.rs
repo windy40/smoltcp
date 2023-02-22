@@ -117,6 +117,7 @@ compile_error!("If you enable the socket feature, you must enable at least one o
         feature = "medium-ethernet",
         feature = "medium-ip",
         feature = "medium-ieee802154",
+        feature = "medium-lorawan",
     ))
 ))]
 compile_error!("If you enable the socket feature, you must enable at least one of the following features: medium-ip, medium-ethernet, medium-ieee802154");
@@ -155,7 +156,8 @@ mod config {
 #[cfg(any(
     feature = "medium-ethernet",
     feature = "medium-ip",
-    feature = "medium-ieee802154"
+    feature = "medium-ieee802154",
+    feature = "medium-lorawan"
 ))]
 pub mod iface;
 

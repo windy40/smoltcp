@@ -136,6 +136,8 @@ impl<D: Device, S: PcapSink> PcapWriter<D, S> {
             Medium::Ethernet => PcapLinkType::Ethernet,
             #[cfg(feature = "medium-ieee802154")]
             Medium::Ieee802154 => PcapLinkType::Ieee802154WithFcs,
+            #[cfg(feature = "medium-lorawan")]
+            Medium::Lorawan => PcapLinkType::Ip,  // TODO(windy40) not sure 
         };
         sink.global_header(link_type);
         PcapWriter {

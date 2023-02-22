@@ -176,6 +176,8 @@ impl<'a> fmt::Display for Packet<'a> {
             },
             #[cfg(feature = "medium-ieee802154")]
             Medium::Ieee802154 => Ok(()), // XXX
+            #[cfg(feature = "medium-lorawan")]
+            Medium::Lorawan => Ok(()), // XXX
         }
     }
 }
